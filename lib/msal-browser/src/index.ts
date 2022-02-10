@@ -50,8 +50,9 @@ export { RedirectHandler } from "./interaction_handler/RedirectHandler";
 export { EventMessage, EventPayload, EventError, EventCallbackFunction, EventMessageUtils, PopupEvent } from "./event/EventMessage";
 export { EventType } from "./event/EventType";
 export { EventHandler } from "./event/EventHandler";
-
 export { SignedHttpRequest, SignedHttpRequestOptions } from "./crypto/SignedHttpRequest";
+
+export { CryptoOps } from "./crypto/CryptoOps";
 
 // Utilities
 export { BrowserStateObject } from "./utils/BrowserProtocolUtils";

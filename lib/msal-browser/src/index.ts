@@ -51,6 +51,7 @@ export { EventMessage, EventPayload, EventError, EventCallbackFunction, EventMes
 export { EventType } from "./event/EventType";
 export { EventHandler } from "./event/EventHandler";
  
+export { CryptoOps } from "./crypto/CryptoOps";
 export { SignedHttpRequest, SignedHttpRequestOptions } from "./crypto/SignedHttpRequest";
  
 // Utilities

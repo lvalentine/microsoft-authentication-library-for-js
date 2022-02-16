@@ -136,7 +136,19 @@ export class RefreshTokenClient extends BaseClient {
 
         const requestBody = await this.createTokenRequestBody(request);
         const queryParameters = this.createTokenQueryParameters(request);
+        const endpoint = UrlString.appendQueryString(authority.tokenEndpoint, queryParameters);
+
         const headers: Record<string, string> = this.createTokenRequestHeaders(request.ccsCredential);
+        if (request.proxyHeaders) {
+            for (const [key, value] of Object.entries(request.proxyHeaders)) {
+                headers[key] = value;
+            }
+        }
+
+        if (request.proxyUrlHeaderKey) {
+            headers[request.proxyUrlHeaderKey] = endpoint;
+        }
+
         const thumbprint: RequestThumbprint = {
             clientId: this.config.authOptions.clientId,
             authority: authority.canonicalAuthority,
@@ -149,8 +161,7 @@ export class RefreshTokenClient extends BaseClient {
             sshKid: request.sshKid
         };
 
-        const endpoint = UrlString.appendQueryString(authority.tokenEndpoint, queryParameters);
-        return this.executePostToTokenEndpoint(endpoint, requestBody, headers, thumbprint);
+        return this.executePostToTokenEndpoint(request.proxyUrl ?? endpoint, requestBody, headers, thumbprint);
     }
 
     /**

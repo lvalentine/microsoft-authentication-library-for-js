@@ -36,4 +36,7 @@ export type BaseAuthRequest = {
     sshKid?: string,
     azureCloudOptions?: AzureCloudOptions;
     requestedClaimsHash?: string;
+    proxyUrl?: string;
+    proxyUrlHeaderKey?: string;
+    proxyHeaders?: Record<string, string>;
 };

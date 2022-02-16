@@ -3,7 +3,7 @@
  * Licensed under the MIT License.
  */
 
-import { AccessTokenEntity, ICrypto, IdTokenEntity, Logger, ScopeSet, Authority, AuthorityOptions, ExternalTokenResponse, AccountEntity, AuthToken, RefreshTokenEntity } from "@azure/msal-common";
+import { AccessTokenEntity, ICrypto, IdTokenEntity, Logger, ScopeSet, Authority, AuthorityOptions, ExternalTokenResponse, AccountEntity, AuthToken, RefreshTokenEntity , AuthorityType } from "@azure/msal-common";
 import { BrowserConfiguration } from "../config/Configuration";
 import { SilentRequest } from "../request/SilentRequest";
 import { BrowserCacheManager } from "./BrowserCacheManager";
@@ -46,7 +46,7 @@ export class TokenCache implements ITokenCache {
      * @param response
      * @param options
      */
-    loadExternalTokens(request: SilentRequest, response: ExternalTokenResponse, options: LoadTokenOptions): void {
+    loadExternalTokens(request: SilentRequest, response: ExternalTokenResponse, options: LoadTokenOptions): string {
         this.logger.info("TokenCache - loadExternalTokens called");
 
         if (!response.id_token) {
@@ -54,9 +54,10 @@ export class TokenCache implements ITokenCache {
         }
 
         if (request.account) {
-            this.loadIdToken(response.id_token, request.account.homeAccountId, request.account.environment, request.account.tenantId, options);
+            const homeAccountId = this.loadIdToken(response.id_token, request.account.homeAccountId, request.account.environment, request.account.tenantId, options);
             this.loadAccessToken(request, response, request.account.homeAccountId, request.account.environment, request.account.tenantId, options);
             this.loadRefreshToken(request, response, request.account.homeAccountId, request.account.environment);
+            return homeAccountId;
         } else if (request.authority) {
 
             const authorityUrl = Authority.generateAuthority(request.authority, request.azureCloudOptions);
@@ -71,14 +72,16 @@ export class TokenCache implements ITokenCache {
             // "clientInfo" from options takes precedence over "clientInfo" in response
             if (options.clientInfo) {
                 this.logger.trace("TokenCache - homeAccountId from options");
-                this.loadIdToken(response.id_token, options.clientInfo, authority.hostnameAndPort, authority.tenant, options);
-                this.loadAccessToken(request, response, options.clientInfo, authority.hostnameAndPort, authority.tenant, options);
-                this.loadRefreshToken(request, response, options.clientInfo, authority.hostnameAndPort);
+                const homeAccountId = this.loadIdToken(response.id_token, options.clientInfo, authority.hostnameAndPort, authority.tenant, options, authority.authorityType);
+                this.loadAccessToken(request, response, homeAccountId, authority.hostnameAndPort, authority.tenant, options);
+                this.loadRefreshToken(request, response, homeAccountId, authority.hostnameAndPort);
+                return homeAccountId;
             } else if (response.client_info) {
                 this.logger.trace("TokenCache - homeAccountId from response");
-                this.loadIdToken(response.id_token, response.client_info, authority.hostnameAndPort, authority.tenant, options);
-                this.loadAccessToken(request, response, response.client_info, authority.hostnameAndPort, authority.tenant, options);
-                this.loadRefreshToken(request, response, response.client_info, authority.hostnameAndPort);
+                const homeAccountId = this.loadIdToken(response.id_token, response.client_info, authority.hostnameAndPort, authority.tenant, options, authority.authorityType);
+                this.loadAccessToken(request, response, homeAccountId, authority.hostnameAndPort, authority.tenant, options);
+                this.loadRefreshToken(request, response, homeAccountId, authority.hostnameAndPort);
+                return homeAccountId;
             } else {
                 throw BrowserAuthError.createUnableToLoadTokenError("Please provide clientInfo in the response or options.");
             }
@@ -95,10 +98,11 @@ export class TokenCache implements ITokenCache {
      * @param tenantId
      * @param options
      */
-    private loadIdToken(idToken: string, homeAccountId: string, environment: string, tenantId: string, options: LoadTokenOptions): void {
+    private loadIdToken(idToken: string, clientInfo: string, environment: string, tenantId: string, options: LoadTokenOptions, authorityType?: AuthorityType): string {
 
-        const idTokenEntity = IdTokenEntity.createIdTokenEntity(homeAccountId, environment, idToken, this.config.auth.clientId, tenantId);
         const idAuthToken = new AuthToken(idToken, this.cryptoObj);
+        const homeAccountId = authorityType !== undefined ? AccountEntity.generateHomeAccountId(clientInfo, authorityType, this.logger, this.cryptoObj, idAuthToken) : clientInfo;
+        const idTokenEntity = IdTokenEntity.createIdTokenEntity(homeAccountId, environment, idToken, this.config.auth.clientId, tenantId);
         const accountEntity = options.clientInfo ?
             AccountEntity.createAccount(options.clientInfo, homeAccountId, idAuthToken, undefined, undefined, undefined, undefined, environment) :
             AccountEntity.createGenericAccount(homeAccountId, idAuthToken, undefined, undefined, undefined, undefined, environment);
@@ -110,6 +114,8 @@ export class TokenCache implements ITokenCache {
         } else {
             throw BrowserAuthError.createUnableToLoadTokenError("loadExternalTokens is designed to work in browser environments only.");
         }
+
+        return homeAccountId;
     }
 
     /**
@@ -169,7 +175,6 @@ export class TokenCache implements ITokenCache {
         }
 
         const refreshTokenEntity = RefreshTokenEntity.createRefreshTokenEntity(homeAccountId, environment, response.refresh_token, this.config.auth.clientId, undefined, undefined);
-        // const accessTokenEntity = AccessTokenEntity.createAccessTokenEntity(homeAccountId, environment, response.access_token, this.config.auth.clientId, tenantId, scopes, expiresOn, extendedExpiresOn, this.cryptoObj);
 
         if (this.isBrowserEnvironment) {
             this.logger.verbose("TokenCache - loading refresh token");

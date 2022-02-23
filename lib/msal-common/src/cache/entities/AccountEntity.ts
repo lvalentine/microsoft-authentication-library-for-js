@@ -214,7 +214,7 @@ export class AccountEntity {
             // How do you account for MSA CID here?
             account.localAccountId = idToken?.claims?.oid || idToken?.claims?.sub || "";
             // upn claim for most ADFS scenarios
-            account.username = idToken?.claims?.upn || idToken?.claims?.preferred_username || "";
+            account.username = idToken?.claims?.upn || "";
             account.name = idToken?.claims?.name || "";
             account.idTokenClaims = idToken?.claims;
         }

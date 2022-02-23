@@ -9,6 +9,12 @@ import { LoadTokenOptions } from "./TokenCache";
 
 export interface ITokenCache {
 
-    /** API to side-load tokens to MSAL cache */
+    /**
+     * API to side-load tokens to MSAL cache
+     * @param request 
+     * @param response 
+     * @param options 
+     * @returns The homeAccountId of the account associated with the response.
+     */
     loadExternalTokens(request: SilentRequest, response: ExternalTokenResponse, options: LoadTokenOptions): string;
 }

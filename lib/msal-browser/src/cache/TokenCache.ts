@@ -45,6 +45,7 @@ export class TokenCache implements ITokenCache {
      * @param request
      * @param response
      * @param options
+     * @returns The homeAccountId of the account associated with the response.
      */
     loadExternalTokens(request: SilentRequest, response: ExternalTokenResponse, options: LoadTokenOptions): string {
         this.logger.info("TokenCache - loadExternalTokens called");
@@ -55,8 +56,8 @@ export class TokenCache implements ITokenCache {
 
         if (request.account) {
             const homeAccountId = this.loadIdToken(response.id_token, request.account.homeAccountId, request.account.environment, request.account.tenantId, options);
-            this.loadAccessToken(request, response, request.account.homeAccountId, request.account.environment, request.account.tenantId, options);
-            this.loadRefreshToken(request, response, request.account.homeAccountId, request.account.environment);
+            this.loadAccessToken(request, response, homeAccountId, request.account.environment, request.account.tenantId, options);
+            this.loadRefreshToken(request, response, homeAccountId, request.account.environment);
             return homeAccountId;
         } else if (request.authority) {
 
@@ -97,6 +98,7 @@ export class TokenCache implements ITokenCache {
      * @param environment
      * @param tenantId
      * @param options
+     * @returns The homeAccountId of the account.
      */
     private loadIdToken(idToken: string, clientInfo: string, environment: string, tenantId: string, options: LoadTokenOptions, authorityType?: AuthorityType): string {
 
